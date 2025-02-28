@@ -1,0 +1,160 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+//TODO : check how the model are getting connected. 
+//normal login
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId // Unique ID (MongoDB ObjectId)
+  name           String // User ka naam
+  image          String? // Profile image (optional)
+  email          String?   @unique // Unique email (optional)
+  emailVerified  DateTime? // Kab email verify hui
+  hashedPassword String? // Encrypted password (sirf normal login ke liye)
+  createdAt      DateTime  @default(now()) // Account banne ka time
+  updatedAt      DateTime  @updatedAt // Jab last update hua
+  sessions       Session[] // User ke sessions
+  accounts       Account[] // User ke connected accounts (Google, GitHub)
+  favoriteIds    String[]  @db.ObjectId // Favorite movies ki IDs
+}
+
+// {
+//   "_id": "65b8f0e7a0b7b3d5a1c8b19c",
+//   "name": "John Doe",
+//   "image": "https://example.com/profile.jpg",
+//   "email": "johndoe@gmail.com",
+//   "emailVerified": "2024-02-25T12:00:00Z",
+//   "hashedPassword": "$2b$10$hWJlgA1Ud7...hashedpassword...",
+//   "createdAt": "2024-02-24T10:30:00Z",
+//   "updatedAt": "2024-02-25T10:30:00Z",
+//   "sessions": [],
+//   "accounts": [],
+//   "favoriteIds": ["65c8f1e8a1d4c5e6f7a2h3i4", "65d9g2j9b2e5d6f7h8k3m4n5"]
+// }
+
+//github & google login
+// 👉 Kab use hota hai?
+//     Jab user Google, GitHub ya kisi bhi OAuth provider se login kare
+//     Jab user ka multiple login methods ho (email + Google login)
+// 👉 Kaam kya karta hai?
+//     userId store karta hai jo User model se linked hota hai
+//     provider store karta hai (Google, GitHub, etc.)
+//     access_token aur refresh_token store karta hai
+//     expires_at store karta hai taaki pata chale ki token kab expire hoga
+// 👉 Example:
+// Agar John Doe Google se login karta hai:
+// {
+//   "userId": "65b8f0e7a0b7b3d5a1c8b19c",
+//   "provider": "google",
+//   "providerAccountId": "1234567890",
+//   "access_token": "some_google_access_token",
+//   "expires_at": 1708857600
+// }
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId // Unique ID
+  userId            String  @db.ObjectId // Ye user kis se linked hai 
+  type              String // Account ka type (OAuth, email, etc.)
+  provider          String // Provider (Google, GitHub, etc.)
+  providerAccountId String // Provider ka unique ID
+  refresh_token     String? @db.String // OAuth refresh token
+  access_token      String? @db.String // OAuth access token
+  expires_at        Int? // Token kab expire hoga
+  token_type        String? // Token ka type
+  scope             String? // API permissions
+  id_token          String? @db.String // JWT ID Token
+  session_state     String? // Session ka state
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) //userId ko User ke id field se link karta hai
+
+  @@unique([provider, providerAccountId])
+}
+
+// {
+//   "_id": "76c9f1g8b1d4c5e6f7a2h3i4",
+//   "userId": "65b8f0e7a0b7b3d5a1c8b19c",
+//   "type": "oauth",
+//   "provider": "google",
+//   "providerAccountId": "1234567890",
+//   "refresh_token": "refresh_token_example",
+//   "access_token": "access_token_example",
+//   "expires_at": 1708857600,
+//   "token_type": "Bearer",
+//   "scope": "email profile",
+//   "id_token": "id_token_example",
+//   "session_state": "session_active"
+// }
+
+//this is for the next.auth
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// {
+//   "_id": "a1b2c3d4e5f6g7h8i9j0k1l2",
+//   "sessionToken": "session_token_example",
+//   "userId": "65b8f0e7a0b7b3d5a1c8b19c",
+//   "expires": "2024-03-01T12:00:00Z"
+// }
+
+// 👉 Kab use hota hai?
+//     Jab user email verify karta hai
+//     Jab user forgot password karke reset link mangta hai
+// 👉 Kaam kya karta hai?
+//     Ek unique token generate karta hai
+//     Token expire hone ka time store karta hai
+//     identifier me user ka email ya unique ID store hota hai
+// {
+//   "identifier": "johndoe@gmail.com",
+//   "token": "random_unique_token",
+//   "expires": "2024-02-26T12:00:00Z"
+// }
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// {
+//   "_id": "v1w2x3y4z5a6b7c8d9e0f1g2",
+//   "identifier": "johndoe@gmail.com",
+//   "token": "unique_verification_token",
+//   "expires": "2024-02-26T12:00:00Z"
+// }
+
+model Movie {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId // Unique ID
+  title        String? // Movie ka naam (optional)
+  description  String // Movie ka detail
+  videoUrl     String // Video ka URL
+  thumbnailUrl String // Thumbnail image ka URL
+  genre        String // Movie ka genre (Action, Comedy, etc.)
+  duration     String // Duration (e.g., 2h 30m)
+}
+
+// {
+//   "_id": "65c8f1e8a1d4c5e6f7a2h3i4",
+//   "title": "Inception",
+//   "description": "A mind-bending thriller where dreams are manipulated.",
+//   "videoUrl": "https://example.com/inception.mp4",
+//   "thumbnailUrl": "https://example.com/inception_thumbnail.jpg",
+//   "genre": "Sci-Fi",
+//   "duration": "2h 28m"
+// }
