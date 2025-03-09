@@ -2,8 +2,11 @@ import Image from "next/image";
 import Input from "@/components/Input";
 import { useCallback, useState } from "react";
 import { varients } from "../constant/auth";
-// import axios from "axios";
-// import toast from "react-hot-toast";
+import { signIn } from "next-auth/react";
+import axios from "axios";
+import { FaGithub } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
+import Router from "next/router";
 
 const Auth = () => {
   const [email, setEmail] = useState<string>("");
@@ -11,18 +14,34 @@ const Auth = () => {
   const [password, setPassword] = useState<string>("");
   const [varient, setVarient] = useState<string>(varients.login);
 
-  // const register = useCallback(async () => {
-  //   try {
-  //     await axios.post(`/api/register`, {
-  //       email,
-  //       name,
-  //       password,
-  //     });
-  //     toast.success("Account created successfully!");
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }, [email, name, password]);
+  const login = useCallback(async () => {
+    try {
+      await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: "/",
+      });
+      Router.push("/profiles"); 
+      // toast.success("Sign-in successful!");
+    } catch (error) {
+      console.log(error);
+    }
+  }, [email, password]);
+
+  const register = useCallback(async () => {
+    try {
+      await axios.post("/api/register", {
+        email,
+        name,
+        password,
+      });
+
+      login();
+    } catch (error) {
+      console.log(error);
+    }
+  }, [email, name, password, login]);
 
   const toggleVarient = useCallback(() => {
     setVarient((currentVarient) =>
@@ -77,12 +96,24 @@ const Auth = () => {
             </div>
             <button
               className="bg-red-600 py-3 rounded-md w-full mt-8 lg:mt-10 hover:bg-red-700 transition"
-              onClick={varient === varients.login ? () => {
-                console.log("registeraa")
-              } : () => console.log("logsadfaf")}
+              onClick={varient === varients.login ? login : register}
             >
               {varient === varients.login ? varients.login : varients.signup}
             </button>
+            <div className="flex flex-row items-center gap-4 mt-8 justify-center">
+              <div
+                onClick={() => signIn("google", { callbackUrl: "/profiles" })}
+                className="w-10 h-10 bg-white rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 transition"
+              >
+                <FcGoogle size={32} />
+              </div>
+              <div
+                onClick={() => signIn("github", { callbackUrl: "/profiles" })}
+                className="w-10 h-10 bg-white rounded-full flex items-center justify-center cursor-pointer hover:opacity-80 transition"
+              >
+                <FaGithub size={32} />
+              </div>
+            </div>
             <p className="text-neutral-500 text-center mt-12">
               {varients.login === varient
                 ? varients.firstTimeUsingNetflix

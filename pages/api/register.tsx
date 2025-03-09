@@ -12,7 +12,6 @@ export default async function handler(
     }
 
     const { email, name, password } = req.body;
-
     const existingUser = await prismadb.user.findUnique({
       where: {
         email,
@@ -34,7 +33,6 @@ export default async function handler(
         emailVerified: new Date(),
       },
     });
-
     return res.status(200).json(user);
   } catch (error) {
     return res.status(400).json({ error: `Something went wrong: ${error}` });
