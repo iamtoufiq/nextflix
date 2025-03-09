@@ -1,13 +1,13 @@
-import useCurrentUser from "@/hooks/useCurrentUser";
+import Billboard from "@/components/Billboard";
+import Navbar from "@/components/Navbar";
 import { withAuth } from "@/utils/withAuth";
 
 export default function Home() {
-  const { data: UserData } = useCurrentUser();
-  console.log("UserData", UserData);
   return (
-  <div className="bg-red-900">
-    netflix 
-  </div>
+    <>
+      <Navbar />
+    <Billboard/>
+    </>
   );
 }
 

@@ -4,9 +4,9 @@ import { useRouter } from "next/router";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import Image from "next/image";
 import { withAuth } from "@/utils/withAuth";
-
+import { logoPath } from "@/constant/navbarItems";
 const images = [
-  "/images/default-blue.png",
+  logoPath,
   "/images/default-red.png",
   "/images/default-slate.png",
   "/images/default-green.png",
